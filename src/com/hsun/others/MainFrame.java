@@ -41,6 +41,8 @@ public class MainFrame extends JFrame{
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	RestUtility restUtility;
+	
 	boolean isUpdate;
 	
 	int curPrice;
@@ -68,13 +70,11 @@ public class MainFrame extends JFrame{
 		    System.out.println("System tray is not supported !!! ");
 		    return;
 		}
+		
+		restUtility = RestUtility.getInstance();
 		//get the systemTray of the system
 		SystemTray systemTray = SystemTray.getSystemTray();
 		
-		//get default toolkit
-		//Toolkit toolkit = Toolkit.getDefaultToolkit();
-		//get image 
-		//Toolkit.getDefaultToolkit().getImage("src/resources/busylogo.jpg");
 		Image image = Toolkit.getDefaultToolkit().getImage("src/images/1.gif");
 		
 		//popupmenu
@@ -233,41 +233,11 @@ public class MainFrame extends JFrame{
 
 		@Override
 		protected Object doInBackground() throws Exception {
-			String apiUrl;
-			URI uri = null;
-			HttpClient httpClient;
-			HttpGet get;
-			HttpResponse response;
-			URIBuilder uriBuilder = new URIBuilder();
-			
-	  		httpClient = new DefaultHttpClient();
-	  		JSONArray responseArray = null;
-	  		
-	  		List<JSONObject> resList;
-	  		
 	  		try{
-	  			apiUrl = "http://www.taifex.com.tw/quotesapi/getQuotes.aspx";
-		  		
-		  		uriBuilder.setParameter("objId", "2");
-		  		
-		  		uri = uriBuilder.build();
-		  		
-		  		apiUrl += uri;
-		  		
-		  		get = new HttpGet(apiUrl);
-		  		
 		  		while(true){
 			  		if(isUpdate){
-			  			response = httpClient.execute(get);
-				  		responseArray = new JSONArray(EntityUtils.toString(response.getEntity()));
-				  		resList = toList(responseArray);
-				  		
-				  		for(JSONObject jsonObject : resList){
-				  			if(((String)jsonObject.get("contract")).startsWith("TX")){
-				  				curPrice = Integer.parseInt(jsonObject.getString("price").replaceAll(",", ""));
-				  				trayIcon.setToolTip(String.valueOf(curPrice));
-				  			}
-				  		}
+			  			curPrice = restUtility.getTxPrice();
+			  			trayIcon.setToolTip(String.valueOf(curPrice));
 				  		refreshPrice();
 					}
 			  		Thread.sleep(10000);//10sec refresh
@@ -278,33 +248,4 @@ public class MainFrame extends JFrame{
 			return null;
 		}
   	}
-  	/**
-  	 * JSONAray 轉 List
-  	 * @param array
-  	 * @return
-  	 * @throws JSONException
-  	 */
-  	public List toList(JSONArray array) throws JSONException {
-        List list = new ArrayList();
-        for (int i = 0; i < array.length(); i++) {
-            list.add(fromJson(array.get(i)));
-        }
-        return list;
-    }
-  	
-  	/**
-  	 * Json物件轉 Map or List
-  	 * @param json
-  	 * @return
-  	 * @throws JSONException
-  	 */
-  	public Object fromJson(Object json) throws JSONException {
-        if (json == JSONObject.NULL) {
-            return null;
-        }else if (json instanceof JSONArray) {
-            return toList((JSONArray) json);
-        } else {
-            return json;
-        }
-    }
 }
